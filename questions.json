@@ -1,0 +1,90 @@
+[
+    {
+        "transaction": "Cash sales made of £750",
+        "accounts": [
+            "Cash",
+            "Sales"
+        ],
+        "correct_debit": "Cash",
+        "correct_credit": "Sales",
+        "question_type": "debit",
+        "explanation": "In cash sales, we debit Cash and credit Sales account."
+    },
+    {
+        "transaction": "Cash sales made of £750",
+        "accounts": [
+            "Cash",
+            "Sales"
+        ],
+        "correct_debit": "Cash",
+        "correct_credit": "Sales",
+        "question_type": "credit",
+        "explanation": "In cash sales, we debit Cash and credit Sales account."
+    },
+    {
+        "transaction": "Purchased Furniture for cash £2,000",
+        "accounts": [
+            "Furniture",
+            "Cash"
+        ],
+        "correct_debit": "Furniture",
+        "correct_credit": "Cash",
+        "question_type": "debit",
+        "explanation": "When buying furniture with cash, we debit Furniture and credit Cash."
+    },
+    {
+        "transaction": "Purchased Furniture for cash £2,000",
+        "accounts": [
+            "Furniture",
+            "Cash"
+        ],
+        "correct_debit": "Furniture",
+        "correct_credit": "Cash",
+        "question_type": "credit",
+        "explanation": "When buying furniture with cash, we debit Furniture and credit Cash."
+    },
+    {
+        "transaction": "Owner invested £5,000 in the business",
+        "accounts": [
+            "Cash",
+            "Capital"
+        ],
+        "correct_debit": "Cash",
+        "correct_credit": "Capital",
+        "question_type": "credit",
+        "explanation": "When owner invests, we debit Cash and credit Owner's Capital."
+    },
+    {
+        "transaction": "Borrowed £1,500 from bank",
+        "accounts": [
+            "Bank",
+            "Loan Payable"
+        ],
+        "correct_debit": "Bank",
+        "correct_credit": "Loan Payable",
+        "question_type": "credit",
+        "explanation": "When receiving a loan, we debit Bank and credit Loan Payable."
+    },
+    {
+        "transaction": "Pays £215 for van hire using debit card",
+        "accounts": [
+            "Van Hire Expense",
+            "Bank"
+        ],
+        "correct_debit": "Van Hire Expense",
+        "correct_credit": "Bank",
+        "question_type": "debit",
+        "explanation": "When paying expenses by card, we debit the Expense and credit Bank."
+    },
+    {
+        "transaction": "Returns goods to supplier worth £230",
+        "accounts": [
+            "Accounts Payable",
+            "Purchases Returns"
+        ],
+        "correct_debit": "Accounts Payable",
+        "correct_credit": "Purchases Returns",
+        "question_type": "credit",
+        "explanation": "For returns to supplier, we debit Accounts Payable and credit Purchase Returns."
+    }
+]
