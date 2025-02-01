@@ -6,6 +6,8 @@ import time
 import qrcode
 from io import BytesIO
 
+st.write("Streamlit version:", st.__version__)
+
 # App URL (replace with actual deployed app link)
 app_url = "https://accountinggame.streamlit.app"
 
