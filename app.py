@@ -1,45 +1,34 @@
 import streamlit as st
 import json
 import random
-import time
+import pandas as pd
+from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
-import qrcode
-from io import BytesIO
 
-st.write("Streamlit version:", st.__version__)
-
-# App URL (replace with actual deployed app link)
-app_url = "https://accountinggame.streamlit.app"
-
-# Generate QR code
-qr = qrcode.make(app_url)
-qr_bytes = BytesIO()
-qr.save(qr_bytes, format="PNG")
-
-# Display QR code in the sidebar
-st.sidebar.image(qr_bytes.getvalue(), caption="Scan to Play!", use_container_width=True)
-
-# -------------------------
-# PLAYER NAME FORM SECTION
-# -------------------------
-if "player_name" not in st.session_state:
-    with st.form(key="player_info"):
-        st.write("## Enter Your Name to Start")
-        player_name = st.text_input("Player Name")
-        submit_button = st.form_submit_button(label="Start Game")
-        if submit_button:
-            if player_name.strip() != "":
-                st.session_state.player_name = player_name.strip()
-                # Optionally initialize other session state variables here
-            else:
-                st.error("Please enter a valid name.")
-
-    # Stop further execution until the name is provided.
-    st.stop()
-
-# -------------------------
-# GAME LOGIC BELOW
-# -------------------------
+# Load Google Sheets credentials
+def load_credentials():
+    """Load Google credentials from secrets or a local file"""
+    try:
+        # ✅ Running on `streamlit.app`
+        creds_dict = json.loads(st.secrets["GOOGLE_SHEETS_CREDENTIALS"])
+        return Credentials.from_service_account_info(
+            creds_dict,
+            scopes=[
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive",
+            ],
+        )
+    except KeyError:
+        # ✅ Running Locally
+        return Credentials.from_service_account_file(
+            "streamlit-sheets-key.json",
+            scopes=[
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive",
+            ],
+        )
 
 
 # Load questions from JSON file
@@ -49,84 +38,116 @@ def load_questions():
         return json.load(file)
 
 
-# Initialize session state for game variables
+# Google Sheets Configuration
+def connect_to_gsheets():
+    creds = load_credentials()
+    client = gspread.authorize(creds)
+    return client.open(
+        "StudentScores"
+    ).sheet1  # Ensure this matches your Google Sheet name
+
+
+# **Function to Save Scores**
+def save_score(name, score, attempt):
+    """Saves student scores to Google Sheets."""
+    try:
+        sheet = connect_to_gsheets()
+        data = sheet.get_all_values()  # Fetch all data to check if headers exist
+
+        # If the sheet is empty, add headers first
+        if len(data) == 0:
+            sheet.append_row(["Name", "Score", "Attempt Number", "Timestamp"])
+
+        # Append the new row with student data
+        sheet.append_row(
+            [name, score, attempt, datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
+        )
+        st.success("✅ Score saved successfully!")
+    except Exception as e:
+        st.error(f"⚠️ Error saving score: {e}")
+
+
+# Initialize session state
 if "score" not in st.session_state:
     st.session_state.score = 0
-if "current_question" not in st.session_state:
-    st.session_state.current_question = None
-if "round" not in st.session_state:
     st.session_state.round = 1
-if "streak" not in st.session_state:
     st.session_state.streak = 0
-if "questions" not in st.session_state:
     st.session_state.questions = load_questions()
+    st.session_state.username = ""
+    st.session_state.attempt = 1  # Track attempt number
 
+# **Student Login Form (Centered)**
+if not st.session_state.username:
+    st.markdown(
+        "<h2 style='text-align: center;'>🎓 Enter Your Name</h2>",
+        unsafe_allow_html=True,
+    )
 
-# Function to get a new question
-def get_new_question():
-    if st.session_state.questions:
-        st.session_state.current_question = random.choice(st.session_state.questions)
-        st.session_state.questions.remove(st.session_state.current_question)
-    else:
-        st.session_state.current_question = None
+    # Centered text input
+    username = st.text_input(
+        "Enter Your Name",
+        placeholder="Your Name",
+        key="username_input",
+        label_visibility="collapsed",
+    )
 
-
-# Initialize the first question if not already set
-if st.session_state.current_question is None:
-    get_new_question()
-
-# UI Layout
-st.title("💰 Debit or Credit Challenge")
-st.write(f"**Welcome, {st.session_state.player_name}!**")
-
-# Show round, score, and streak
-st.write(
-    f"**Round:** {st.session_state.round}/10 | **Score:** {st.session_state.score} | **Streak:** {st.session_state.streak}"
-)
-
-# Display the current question if available
-if st.session_state.current_question:
-    st.subheader(st.session_state.current_question["transaction"])
-    st.write("**Which account should be debited?**")
-
-    # Answer buttons
-    for account in st.session_state.current_question["accounts"]:
-        if st.button(account):
-            if account == st.session_state.current_question["correct_debit"]:
-                st.session_state.score += 10 * (1 + st.session_state.streak // 3)
-                st.session_state.streak += 1
-                feedback = (
-                    f"✅ Correct! {st.session_state.current_question['explanation']}"
-                )
-            else:
-                st.session_state.streak = 0
-                feedback = (
-                    f"❌ Incorrect! {st.session_state.current_question['explanation']}"
-                )
-
-            st.write(feedback)
-            time.sleep(1)
-
-            # Move to next round or finish game
-            if st.session_state.round >= 10:
-                st.write(f"🎉 Game Over! Final Score: {st.session_state.score}")
-                if st.button("Play Again"):
-                    st.session_state.score = 0
-                    st.session_state.round = 1
-                    st.session_state.streak = 0
-                    st.session_state.questions = load_questions()
-                    get_new_question()
-            else:
-                st.session_state.round += 1
-                get_new_question()
-                st.experimental_rerun()
-
+    if st.button("Start Game", use_container_width=True):
+        if username.strip():
+            st.session_state.username = username
+            st.session_state.attempt += 1  # Increment attempt number
+            st.success(f"Welcome, {username}!")
+            st.rerun()
+        else:
+            st.warning("Please enter your name.")
 else:
-    st.write("🎉 Game Over! No more questions left.")
-    if st.button("Play Again"):
-        st.session_state.score = 0
-        st.session_state.round = 1
-        st.session_state.streak = 0
-        st.session_state.questions = load_questions()
-        get_new_question()
-        st.experimental_rerun()
+    # Game Title
+    st.title("💰 Debit or Credit Challenge")
+
+    # Show game stats
+    st.write(
+        f"**Name:** {st.session_state.username}  |  **Attempt:** {st.session_state.attempt}  |  **Round:** {st.session_state.round}/10  |  **Score:** {st.session_state.score}  |  **Streak:** {st.session_state.streak}"
+    )
+
+    # Load a question
+    if st.session_state.round <= 10 and st.session_state.questions:
+        current_question = random.choice(st.session_state.questions)
+        st.subheader(current_question["transaction"])
+        st.write("**Which account should be debited?**")
+
+        for account in current_question["accounts"]:
+            if st.button(account):
+                if account == current_question["correct_debit"]:
+                    st.session_state.score += 10 * (1 + st.session_state.streak // 3)
+                    st.session_state.streak += 1
+                    feedback = f"✅ Correct! {current_question['explanation']}"
+                else:
+                    st.session_state.streak = 0
+                    feedback = f"❌ Incorrect! {current_question['explanation']}"
+
+                st.write(feedback)
+                st.session_state.round += 1
+
+                if st.session_state.round > 10:
+                    st.write(f"🎉 Game Over! Final Score: {st.session_state.score}")
+                    save_score(
+                        st.session_state.username,
+                        st.session_state.score,
+                        st.session_state.attempt,
+                    )  # Save score
+
+                    if st.button("Play Again", use_container_width=True):
+                        st.session_state.score = 0
+                        st.session_state.round = 1
+                        st.session_state.streak = 0
+                        st.session_state.questions = load_questions()
+                        st.rerun()
+                else:
+                    st.rerun()
+    else:
+        st.write("🎉 No more questions.")
+        if st.button("Play Again", use_container_width=True):
+            st.session_state.score = 0
+            st.session_state.round = 1
+            st.session_state.streak = 0
+            st.session_state.questions = load_questions()
+            st.rerun()
