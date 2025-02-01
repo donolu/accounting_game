@@ -7,20 +7,14 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 
-try:
-    creds_str = st.secrets["GOOGLE_SHEETS_CREDENTIALS"]
-    st.write("✅ Successfully loaded secrets.")
-    st.write("First 200 characters of credentials:", creds_str[:200])
-except Exception as e:
-    st.error(f"❌ Error loading secrets: {e}")
-
-
 # Load Google Sheets credentials
 def load_credentials():
     """Load Google credentials from secrets or a local file"""
     try:
         # ✅ Running on `streamlit.app`
         creds_dict = json.loads(st.secrets["GOOGLE_SHEETS_CREDENTIALS"])
+        st.write("✅ Successfully loaded secrets.")
+        st.write("First 200 characters of credentials:", creds_dict[:200])
         return Credentials.from_service_account_info(
             creds_dict,
             scopes=[
