@@ -194,7 +194,7 @@ if not st.session_state.username:
 # Branch between Game Over and Game In Progress:
 if st.session_state.question_number > st.session_state.total_questions:
     # --- Game Over Screen ---
-    st.title("💰 Debit or Credit Challenge - Game Over!")
+    st.title("💷 Debit or Credit Challenge - Game Over!")
     st.write(
         f"**Name:** {st.session_state.username}  |  "
         f"**Attempt:** {st.session_state.attempt}  |  "
@@ -235,7 +235,7 @@ if st.session_state.question_number > st.session_state.total_questions:
         st.rerun()
 else:
     # --- Game In Progress ---
-    st.title("💰 Debit or Credit Challenge")
+    st.title("💷 Debit or Credit Challenge")
     st.write(
         f"**Name:** {st.session_state.username}  |  "
         f"**Attempt:** {st.session_state.attempt}  |  "
