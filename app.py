@@ -76,11 +76,23 @@ def load_questions():
 
 # Google Sheets Configuration
 def connect_to_gsheets():
-    creds = load_credentials()
+    """Establish connection to Google Sheets using loaded credentials."""
+    creds = load_credentials()  # Load credentials using the updated function
+    if creds is None:
+        st.error("❌ Failed to authenticate Google Sheets.")
+        return None
+
     client = gspread.authorize(creds)
-    return client.open(
-        "StudentScores"
-    ).sheet1  # Ensure this matches your Google Sheet name
+
+    try:
+        sheet = client.open(
+            "StudentScores"
+        ).sheet1  # Ensure this matches your Google Sheet name
+        st.write("✅ Successfully connected to Google Sheets!")
+        return sheet
+    except Exception as e:
+        st.error(f"⚠️ Error connecting to Google Sheets: {e}")
+        return None
 
 
 # **Function to Save Scores**
