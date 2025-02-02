@@ -160,6 +160,9 @@ if "score" not in st.session_state:
     st.session_state.attempt = 1  # First game attempt
     # Initialize the review list for storing answered question details.
     st.session_state.review = []
+    # Initialize a flag to track if the score has been saved already.
+    st.session_state.score_saved = False
+
 
 # ---------------------------------------------
 # Student Login Form (Name must be entered before any question is shown)
@@ -184,6 +187,7 @@ if not st.session_state.username:
             st.warning("Please enter your name.")
     st.stop()
 
+
 # ---------------------------------------------
 # Main Game Logic
 # ---------------------------------------------
@@ -197,11 +201,13 @@ if st.session_state.question_number > st.session_state.total_questions:
         f"**Final Score:** {st.session_state.score}  |  "
         f"**Final Streak:** {st.session_state.streak}"
     )
-    save_score(
-        st.session_state.username,
-        st.session_state.score,
-        st.session_state.attempt,
-    )
+    # Only save the score once per attempt.
+    if not st.session_state.score_saved:
+        save_score(
+            st.session_state.username, st.session_state.score, st.session_state.attempt
+        )
+        st.session_state.score_saved = True
+
     st.write("📊 Leaderboard:")
     get_leaderboard()
 
@@ -210,8 +216,7 @@ if st.session_state.question_number > st.session_state.total_questions:
         st.subheader("Review Answers")
         if st.session_state.review:
             df_review = pd.DataFrame(st.session_state.review)
-            # Convert the review DataFrame to HTML with the index hidden.
-            html_review = df_review.to_html(index=False)
+            html_review = df_review.to_html(index=False)  # Hide the DataFrame index
             st.markdown(html_review, unsafe_allow_html=True)
         else:
             st.info("No review data available.")
@@ -226,6 +231,7 @@ if st.session_state.question_number > st.session_state.total_questions:
         random.shuffle(st.session_state.questions)
         st.session_state.remaining_questions = st.session_state.questions.copy()
         st.session_state.review = []  # Reset review data for the new attempt
+        st.session_state.score_saved = False  # Reset the score-saved flag
         st.rerun()
 else:
     # --- Game In Progress ---
@@ -260,7 +266,6 @@ else:
         if st.button(account):
             points_awarded = 0
             if account == correct_answer:
-                # Use the current streak (before incrementing) for calculating bonus.
                 points_awarded = 10 * (1 + st.session_state.streak // 3)
                 st.session_state.score += points_awarded
                 st.session_state.streak += 1
