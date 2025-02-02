@@ -1,90 +1,112 @@
 [
-    {
-        "transaction": "Cash sales made of £750",
-        "accounts": [
-            "Cash",
-            "Sales"
-        ],
-        "correct_debit": "Cash",
-        "correct_credit": "Sales",
-        "question_type": "debit",
-        "explanation": "In cash sales, we debit Cash and credit Sales account."
-    },
-    {
-        "transaction": "Cash sales made of £750",
-        "accounts": [
-            "Cash",
-            "Sales"
-        ],
-        "correct_debit": "Cash",
-        "correct_credit": "Sales",
-        "question_type": "credit",
-        "explanation": "In cash sales, we debit Cash and credit Sales account."
-    },
-    {
-        "transaction": "Purchased Furniture for cash £2,000",
-        "accounts": [
-            "Furniture",
-            "Cash"
-        ],
-        "correct_debit": "Furniture",
-        "correct_credit": "Cash",
-        "question_type": "debit",
-        "explanation": "When buying furniture with cash, we debit Furniture and credit Cash."
-    },
-    {
-        "transaction": "Purchased Furniture for cash £2,000",
-        "accounts": [
-            "Furniture",
-            "Cash"
-        ],
-        "correct_debit": "Furniture",
-        "correct_credit": "Cash",
-        "question_type": "credit",
-        "explanation": "When buying furniture with cash, we debit Furniture and credit Cash."
-    },
-    {
-        "transaction": "Owner invested £5,000 in the business",
-        "accounts": [
-            "Cash",
-            "Capital"
-        ],
-        "correct_debit": "Cash",
-        "correct_credit": "Capital",
-        "question_type": "credit",
-        "explanation": "When owner invests, we debit Cash and credit Owner's Capital."
-    },
-    {
-        "transaction": "Borrowed £1,500 from bank",
-        "accounts": [
-            "Bank",
-            "Loan Payable"
-        ],
-        "correct_debit": "Bank",
-        "correct_credit": "Loan Payable",
-        "question_type": "credit",
-        "explanation": "When receiving a loan, we debit Bank and credit Loan Payable."
-    },
-    {
-        "transaction": "Pays £215 for van hire using debit card",
-        "accounts": [
-            "Van Hire Expense",
-            "Bank"
-        ],
-        "correct_debit": "Van Hire Expense",
-        "correct_credit": "Bank",
-        "question_type": "debit",
-        "explanation": "When paying expenses by card, we debit the Expense and credit Bank."
-    },
-    {
-        "transaction": "Returns goods to supplier worth £230",
-        "accounts": [
-            "Accounts Payable",
-            "Purchases Returns"
-        ],
-        "correct_debit": "Accounts Payable",
-        "correct_credit": "Purchases Returns",
-        "question_type": "credit",
-        "explanation": "For returns to supplier, we debit Accounts Payable and credit Purchase Returns."
-    }
-]
+   {
+            "transaction": "Rebecca opens a business bank account with £825 of her own money",
+            "accounts": [
+                "Bank",
+                "Capital"
+            ],
+            "correct_debit": "Bank",
+            "correct_credit": "Capital",
+            "question_type": "both",
+            "explanation": "When owner invests money, we debit Bank (asset increases) and credit Capital (owner's equity increases)."
+        },
+        {
+            "transaction": "Business borrows £1,500 from HCBS bank",
+            "accounts": [
+                "Bank",
+                "Loan"
+            ],
+            "correct_debit": "Bank",
+            "correct_credit": "Loan",
+            "question_type": "both",
+            "explanation": "When receiving a loan, we debit Bank (asset increases) and credit Loan (liability increases)."
+        },
+        {
+            "transaction": "Sells goods for £1,100, customer pays by bank transfer",
+            "accounts": [
+                "Bank",
+                "Sales"
+            ],
+            "correct_debit": "Bank",
+            "correct_credit": "Sales",
+            "question_type": "both",
+            "explanation": "For cash sales, we debit Bank (asset increases) and credit Sales (revenue increases)."
+        },
+        {
+            "transaction": "Takes £425 from business bank account for personal expenses",
+            "accounts": [
+                "Drawings",
+                "Bank"
+            ],
+            "correct_debit": "Drawings",
+            "correct_credit": "Bank",
+            "question_type": "both",
+            "explanation": "When owner withdraws money, we debit Drawings (owner's equity decreases) and credit Bank (asset decreases)."
+        },
+        {
+            "transaction": "Buys goods for resale £730 on credit from G. Sharp",
+            "accounts": [
+                "Purchases",
+                "Accounts Payable"
+            ],
+            "correct_debit": "Purchases",
+            "correct_credit": "Accounts Payable",
+            "question_type": "both",
+            "explanation": "For credit purchases, we debit Purchases (expense increases) and credit Accounts Payable (liability increases)."
+        },
+        {
+            "transaction": "Sells goods on credit £1,800 to P. Bracewell",
+            "accounts": [
+                "Accounts Receivable",
+                "Sales"
+            ],
+            "correct_debit": "Accounts Receivable",
+            "correct_credit": "Sales",
+            "question_type": "both",
+            "explanation": "For credit sales, we debit Accounts Receivable (asset increases) and credit Sales (revenue increases)."
+        },
+        {
+            "transaction": "Pays rent on business premises £340 by bank transfer",
+            "accounts": [
+                "Rent Expense",
+                "Bank"
+            ],
+            "correct_debit": "Rent Expense",
+            "correct_credit": "Bank",
+            "question_type": "both",
+            "explanation": "When paying rent, we debit Rent Expense (expense increases) and credit Bank (asset decreases)."
+        },
+        {
+            "transaction": "Receives £600 cheque from P. Bracewell",
+            "accounts": [
+                "Bank",
+                "Accounts Receivable"
+            ],
+            "correct_debit": "Bank",
+            "correct_credit": "Accounts Receivable",
+            "question_type": "both",
+            "explanation": "When receiving payment from credit customer, we debit Bank (asset increases) and credit Accounts Receivable (asset decreases)."
+        },
+        {
+            "transaction": "Pays £500 cheque to G. Sharp",
+            "accounts": [
+                "Accounts Payable",
+                "Bank"
+            ],
+            "correct_debit": "Accounts Payable",
+            "correct_credit": "Bank",
+            "question_type": "both",
+            "explanation": "When paying a supplier, we debit Accounts Payable (liability decreases) and credit Bank (asset decreases)."
+        },
+        {
+            "transaction": "Buys IT equipment for £1,450 by debit card",
+            "accounts": [
+                "Equipment",
+                "Bank"
+            ],
+            "correct_debit": "Equipment",
+            "correct_credit": "Bank",
+            "question_type": "both",
+            "explanation": "When buying equipment, we debit Equipment (asset increases) and credit Bank (asset decreases)."
+        }
+    ]
