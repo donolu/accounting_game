@@ -5,7 +5,7 @@ import json
 try:
     # Decode Base64 from Secrets
     creds_b64 = st.secrets["GOOGLE_SHEETS_CREDENTIALS_B64"]
-    creds_json = base64.b64decode(creds_b64).decode()
+    creds_json = base64.b64decode(creds_b64).decode().replace("\\n", "\n")
     creds_dict = json.loads(creds_json)
 
     # Print first 200 characters of decoded JSON for debugging
