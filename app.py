@@ -14,7 +14,7 @@ def load_credentials():
     """Load Google Sheets credentials from environment variables or local file."""
     try:
         # ✅ Load from Streamlit Secrets (Deployed Mode)
-        if "GOOGLE_SHEETS_CREDENTIALS" in st.secrets:
+        if "GOOGLE_SHEETS_CREDENTIALS_B64" in st.secrets:
             creds_b64 = st.secrets["GOOGLE_SHEETS_CREDENTIALS_B64"]
             creds_json = base64.b64decode(creds_b64).decode()  # Decode Base64 to JSON
             creds_dict = json.loads(creds_json)  # Convert to Python dictionary
