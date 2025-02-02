@@ -83,7 +83,9 @@ def connect_to_gsheets():
         return None
     client = gspread.authorize(creds)
     try:
-        sheet = client.open("StudentScores").sheet1  # Make sure the sheet name matches
+        sheet = client.open(
+            "StudentScores"
+        ).sheet1  # Ensure the sheet name matches your Google Sheet name
         return sheet
     except Exception as e:
         st.error(f"⚠️ Error connecting to Google Sheets: {e}")
@@ -115,7 +117,7 @@ def save_score(name, score, attempt):
 
 
 def get_leaderboard():
-    """Fetch and display the top scores with ranking numbers."""
+    """Fetch and display the top scores with ranking numbers (index hidden)."""
     st.subheader("🏆 Leaderboard (Top 10)")
     sheet = connect_to_gsheets()
     if sheet is None:
@@ -135,7 +137,9 @@ def get_leaderboard():
             df.sort_values(by="Score", ascending=False).head(10).reset_index(drop=True)
         )
         df_sorted.insert(0, "Rank", range(1, len(df_sorted) + 1))
-        st.table(df_sorted)
+        # Convert the DataFrame to HTML and hide the default index.
+        html_table = df_sorted.to_html(index=False)
+        st.markdown(html_table, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"⚠️ Error retrieving leaderboard: {e}")
 
@@ -157,7 +161,7 @@ if "score" not in st.session_state:
     st.session_state.attempt = 1  # First game attempt
 
 # ---------------------------------------------
-# Student Login Form
+# Student Login Form (Name must be entered before any question is shown)
 # ---------------------------------------------
 if not st.session_state.username:
     st.markdown(
@@ -177,6 +181,8 @@ if not st.session_state.username:
             st.rerun()
         else:
             st.warning("Please enter your name.")
+    # Stop further execution until the user has entered a name.
+    st.stop()
 
 # ---------------------------------------------
 # Main Game Logic
@@ -240,7 +246,6 @@ else:
     random.shuffle(accounts)
     for account in accounts:
         if st.button(account):
-            # Update score and streak based on answer.
             if account == correct_answer:
                 st.session_state.score += 10 * (1 + st.session_state.streak // 3)
                 st.session_state.streak += 1
