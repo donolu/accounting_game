@@ -137,7 +137,6 @@ def get_leaderboard():
             df.sort_values(by="Score", ascending=False).head(10).reset_index(drop=True)
         )
         df_sorted.insert(0, "Rank", range(1, len(df_sorted) + 1))
-        # Convert the DataFrame to HTML and hide the default index.
         html_table = df_sorted.to_html(index=False)
         st.markdown(html_table, unsafe_allow_html=True)
     except Exception as e:
@@ -159,6 +158,8 @@ if "score" not in st.session_state:
     st.session_state.remaining_questions = st.session_state.questions.copy()
     st.session_state.username = ""
     st.session_state.attempt = 1  # First game attempt
+    # Initialize the review list for storing answered question details.
+    st.session_state.review = []
 
 # ---------------------------------------------
 # Student Login Form (Name must be entered before any question is shown)
@@ -181,7 +182,6 @@ if not st.session_state.username:
             st.rerun()
         else:
             st.warning("Please enter your name.")
-    # Stop further execution until the user has entered a name.
     st.stop()
 
 # ---------------------------------------------
@@ -205,6 +205,17 @@ if st.session_state.question_number > st.session_state.total_questions:
     st.write("📊 Leaderboard:")
     get_leaderboard()
 
+    # Button to review answers.
+    if st.button("Review Answers", use_container_width=True):
+        st.subheader("Review Answers")
+        if st.session_state.review:
+            df_review = pd.DataFrame(st.session_state.review)
+            # Convert the review DataFrame to HTML with the index hidden.
+            html_review = df_review.to_html(index=False)
+            st.markdown(html_review, unsafe_allow_html=True)
+        else:
+            st.info("No review data available.")
+
     if st.button("Play Again", use_container_width=True):
         st.session_state.attempt += 1  # Increment attempt counter
         st.session_state.score = 0
@@ -214,6 +225,7 @@ if st.session_state.question_number > st.session_state.total_questions:
         st.session_state.total_questions = len(st.session_state.questions)
         random.shuffle(st.session_state.questions)
         st.session_state.remaining_questions = st.session_state.questions.copy()
+        st.session_state.review = []  # Reset review data for the new attempt
         st.rerun()
 else:
     # --- Game In Progress ---
@@ -246,8 +258,11 @@ else:
     random.shuffle(accounts)
     for account in accounts:
         if st.button(account):
+            points_awarded = 0
             if account == correct_answer:
-                st.session_state.score += 10 * (1 + st.session_state.streak // 3)
+                # Use the current streak (before incrementing) for calculating bonus.
+                points_awarded = 10 * (1 + st.session_state.streak // 3)
+                st.session_state.score += points_awarded
                 st.session_state.streak += 1
                 feedback = f"✅ Correct! {current_question['explanation']}"
             else:
@@ -255,9 +270,19 @@ else:
                 feedback = f"❌ Incorrect! {current_question['explanation']}"
             st.write(feedback)
 
+            # Save this question's review details.
+            review_item = {
+                "Transaction": current_question["transaction"],
+                "Question Type": question_type.capitalize(),
+                "Your Answer": account,
+                "Correct Answer": correct_answer,
+                "Explanation": current_question["explanation"],
+                "Points Awarded": points_awarded,
+            }
+            st.session_state.review.append(review_item)
+
             # Remove the question so it isn’t repeated.
             st.session_state.remaining_questions.pop(0)
             st.session_state.question_number += 1
 
-            # Rerun to update the interface.
             st.rerun()
