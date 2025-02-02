@@ -11,9 +11,9 @@ from google.oauth2.service_account import Credentials
 
 # Load Google Sheets credentials
 def load_credentials():
-    """Load Google Sheets credentials from environment variables or local file."""
+    """Load Google Sheets credentials from secrets (Base64-encoded) or a local file."""
     try:
-        # ✅ Load from Streamlit Secrets (Deployed Mode)
+        # ✅ Running on `streamlit.app`
         if "GOOGLE_SHEETS_CREDENTIALS_B64" in st.secrets:
             creds_b64 = st.secrets["GOOGLE_SHEETS_CREDENTIALS_B64"]
             creds_json = base64.b64decode(creds_b64).decode()  # Decode Base64 to JSON
@@ -25,8 +25,9 @@ def load_credentials():
                     "https://www.googleapis.com/auth/drive",
                 ],
             )
-        # ✅ Load from Local JSON File (Fallback)
-        else:
+
+        # ✅ Running Locally (Only if `streamlit-sheets-key.json` Exists)
+        elif os.path.exists("streamlit-sheets-key.json"):
             return Credentials.from_service_account_file(
                 "streamlit-sheets-key.json",
                 scopes=[
@@ -34,6 +35,12 @@ def load_credentials():
                     "https://www.googleapis.com/auth/drive",
                 ],
             )
+
+        else:
+            st.error(
+                "❌ No Google Sheets credentials found. Ensure `GOOGLE_SHEETS_CREDENTIALS_B64` is set in Streamlit Secrets."
+            )
+            return None
 
     except json.JSONDecodeError as e:
         st.error(f"❌ JSON Parsing Error: {e}")
