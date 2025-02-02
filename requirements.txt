@@ -3,3 +3,5 @@ qrcode
 pillow
 google-auth
 gspread
+pandas
+pyarrow

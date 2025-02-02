@@ -1,14 +1,19 @@
+import streamlit as st
 import base64
 import json
 import os
-import streamlit as st
+import random
+import pandas as pd
+from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import datetime
 
 
+# ---------------------------------------------
+# Utility Functions
+# ---------------------------------------------
 def fix_base64_padding(b64_string):
-    """Fix Base64 padding issues by adding missing `=` characters."""
+    """Fix Base64 padding issues by adding missing '=' characters."""
     missing_padding = len(b64_string) % 4
     if missing_padding:
         b64_string += "=" * (4 - missing_padding)
@@ -16,23 +21,17 @@ def fix_base64_padding(b64_string):
 
 
 def load_credentials():
-    """Load Google Sheets credentials from secrets (Base64-encoded) or a local file."""
+    """Load Google Sheets credentials from Streamlit Secrets or a local file."""
     try:
-        # ✅ Running on `streamlit.app`
         if "GOOGLE_SHEETS_CREDENTIALS_B64" in st.secrets:
             creds_b64 = st.secrets["GOOGLE_SHEETS_CREDENTIALS_B64"]
-            creds_b64 = fix_base64_padding(creds_b64)  # Fix padding
-            creds_json = base64.b64decode(creds_b64).decode(
-                "utf-8"
-            )  # Decode Base64 to JSON
-            creds_dict = json.loads(creds_json)  # Convert to Python dictionary
-
-            # ✅ Fix private key formatting
+            creds_b64 = fix_base64_padding(creds_b64)
+            creds_json = base64.b64decode(creds_b64).decode("utf-8")
+            creds_dict = json.loads(creds_json)
             if "private_key" in creds_dict:
                 creds_dict["private_key"] = creds_dict["private_key"].replace(
                     "\\n", "\n"
                 )
-
             return Credentials.from_service_account_info(
                 creds_dict,
                 scopes=[
@@ -40,8 +39,6 @@ def load_credentials():
                     "https://www.googleapis.com/auth/drive",
                 ],
             )
-
-        # ✅ Running Locally (Only if `streamlit-sheets-key.json` Exists)
         elif os.path.exists("streamlit-sheets-key.json"):
             return Credentials.from_service_account_file(
                 "streamlit-sheets-key.json",
@@ -50,13 +47,11 @@ def load_credentials():
                     "https://www.googleapis.com/auth/drive",
                 ],
             )
-
         else:
             st.error(
-                "❌ No Google Sheets credentials found. Ensure `GOOGLE_SHEETS_CREDENTIALS_B64` is set in Streamlit Secrets."
+                "❌ No Google Sheets credentials found. Ensure GOOGLE_SHEETS_CREDENTIALS_B64 is set in Streamlit Secrets."
             )
             return None
-
     except json.JSONDecodeError as e:
         st.error(f"❌ JSON Parsing Error: {e}")
         return None
@@ -65,50 +60,199 @@ def load_credentials():
         return None
 
 
+# ---------------------------------------------
+# Data Loading & Caching
+# ---------------------------------------------
+@st.cache_data
+def load_questions():
+    """Load questions from a local JSON file."""
+    try:
+        with open("questions.json", "r") as file:
+            return json.load(file)
+    except Exception as e:
+        st.error(f"Error loading questions: {e}")
+        return []
+
+
+@st.cache_resource
 def connect_to_gsheets():
-    """Establish connection to Google Sheets using loaded credentials."""
-    creds = load_credentials()  # Load credentials using the updated function
+    """Connect to Google Sheets using cached credentials."""
+    creds = load_credentials()
     if creds is None:
         st.error("❌ Failed to authenticate Google Sheets.")
         return None
-
     client = gspread.authorize(creds)
-
     try:
-        sheet = client.open(
-            "StudentScores"
-        ).sheet1  # Ensure this matches your Google Sheet name
-        st.write("✅ Successfully connected to Google Sheets!")
+        sheet = client.open("StudentScores").sheet1  # Make sure the sheet name matches
         return sheet
     except Exception as e:
         st.error(f"⚠️ Error connecting to Google Sheets: {e}")
         return None
 
 
+# ---------------------------------------------
+# Score Saving and Leaderboard Functions
+# ---------------------------------------------
 def save_score(name, score, attempt):
-    """Saves student scores to Google Sheets."""
+    """Save the student score to Google Sheets."""
     try:
         sheet = connect_to_gsheets()
         if sheet is None:
             st.error("⚠️ Google Sheets connection failed. Cannot save score.")
             return
 
-        # ✅ Ensure the sheet has headers before inserting data
+        # Add headers if the sheet is empty
         existing_data = sheet.get_all_values()
-        if not existing_data:  # If the sheet is empty, add headers first
+        if not existing_data:
             sheet.append_row(["Name", "Score", "Attempt Number", "Timestamp"])
 
-        # ✅ Append the new score
         sheet.append_row(
             [name, score, attempt, datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
         )
         st.success(f"✅ Score for {name} saved successfully!")
-
     except Exception as e:
         st.error(f"⚠️ Error saving score: {e}")
 
 
-sheet = connect_to_gsheets()
-if sheet:
-    save_score("Test User", 100, 1)
-    st.write("✅ Google Sheets is ready to use!")
+def get_leaderboard():
+    """Fetch and display the top scores with ranking numbers."""
+    st.subheader("🏆 Leaderboard (Top 10)")
+    sheet = connect_to_gsheets()
+    if sheet is None:
+        st.error("⚠️ Cannot fetch leaderboard. Google Sheets connection failed.")
+        return
+
+    try:
+        data = sheet.get_all_values()
+        if len(data) < 2:
+            st.info("📊 No scores available yet.")
+            return
+
+        df = pd.DataFrame(data[1:], columns=data[0])
+        df["Score"] = pd.to_numeric(df["Score"], errors="coerce")
+        df.dropna(subset=["Score"], inplace=True)
+        df_sorted = (
+            df.sort_values(by="Score", ascending=False).head(10).reset_index(drop=True)
+        )
+        df_sorted.insert(0, "Rank", range(1, len(df_sorted) + 1))
+        st.table(df_sorted)
+    except Exception as e:
+        st.error(f"⚠️ Error retrieving leaderboard: {e}")
+
+
+# ---------------------------------------------
+# Session State Initialization
+# ---------------------------------------------
+if "score" not in st.session_state:
+    st.session_state.score = 0
+    st.session_state.question_number = 1
+    st.session_state.streak = 0
+    # Load the complete question bank.
+    st.session_state.questions = load_questions()
+    st.session_state.total_questions = len(st.session_state.questions)
+    # Shuffle the questions and create a list for remaining questions (to avoid repeats)
+    random.shuffle(st.session_state.questions)
+    st.session_state.remaining_questions = st.session_state.questions.copy()
+    st.session_state.username = ""
+    st.session_state.attempt = 1  # First game attempt
+
+# ---------------------------------------------
+# Student Login Form
+# ---------------------------------------------
+if not st.session_state.username:
+    st.markdown(
+        "<h2 style='text-align: center;'>🎓 Enter Your Name</h2>",
+        unsafe_allow_html=True,
+    )
+    username = st.text_input(
+        "Enter Your Name",
+        placeholder="Your Name",
+        key="username_input",
+        label_visibility="collapsed",
+    )
+    if st.button("Start Game", use_container_width=True):
+        if username.strip():
+            st.session_state.username = username.strip()
+            st.success(f"Welcome, {st.session_state.username}!")
+            st.rerun()
+        else:
+            st.warning("Please enter your name.")
+
+# ---------------------------------------------
+# Main Game Logic
+# ---------------------------------------------
+# Branch between Game Over and Game In Progress:
+if st.session_state.question_number > st.session_state.total_questions:
+    # --- Game Over Screen ---
+    st.title("💰 Debit or Credit Challenge - Game Over!")
+    st.write(
+        f"**Name:** {st.session_state.username}  |  "
+        f"**Attempt:** {st.session_state.attempt}  |  "
+        f"**Final Score:** {st.session_state.score}  |  "
+        f"**Final Streak:** {st.session_state.streak}"
+    )
+    save_score(
+        st.session_state.username,
+        st.session_state.score,
+        st.session_state.attempt,
+    )
+    st.write("📊 Leaderboard:")
+    get_leaderboard()
+
+    if st.button("Play Again", use_container_width=True):
+        st.session_state.attempt += 1  # Increment attempt counter
+        st.session_state.score = 0
+        st.session_state.question_number = 1
+        st.session_state.streak = 0
+        st.session_state.questions = load_questions()
+        st.session_state.total_questions = len(st.session_state.questions)
+        random.shuffle(st.session_state.questions)
+        st.session_state.remaining_questions = st.session_state.questions.copy()
+        st.rerun()
+else:
+    # --- Game In Progress ---
+    st.title("💰 Debit or Credit Challenge")
+    st.write(
+        f"**Name:** {st.session_state.username}  |  "
+        f"**Attempt:** {st.session_state.attempt}  |  "
+        f"**Question:** {st.session_state.question_number}/{st.session_state.total_questions}  |  "
+        f"**Score:** {st.session_state.score}  |  "
+        f"**Streak:** {st.session_state.streak}"
+    )
+
+    # Get the current question (first in the remaining list)
+    current_question = st.session_state.remaining_questions[0]
+    st.subheader(current_question["transaction"])
+
+    # Set prompt and determine correct answer based on question_type.
+    question_type = current_question.get("question_type", "debit").lower()
+    if question_type == "credit":
+        prompt_text = "**Which account should be credited?**"
+        correct_answer = current_question["correct_credit"]
+    else:
+        prompt_text = "**Which account should be debited?**"
+        correct_answer = current_question["correct_debit"]
+
+    st.write(prompt_text)
+
+    # Shuffle answer options so their positions vary.
+    accounts = current_question["accounts"].copy()
+    random.shuffle(accounts)
+    for account in accounts:
+        if st.button(account):
+            # Update score and streak based on answer.
+            if account == correct_answer:
+                st.session_state.score += 10 * (1 + st.session_state.streak // 3)
+                st.session_state.streak += 1
+                feedback = f"✅ Correct! {current_question['explanation']}"
+            else:
+                st.session_state.streak = 0
+                feedback = f"❌ Incorrect! {current_question['explanation']}"
+            st.write(feedback)
+
+            # Remove the question so it isn’t repeated.
+            st.session_state.remaining_questions.pop(0)
+            st.session_state.question_number += 1
+
+            # Rerun to update the interface.
+            st.rerun()
