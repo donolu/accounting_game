@@ -117,8 +117,8 @@ def save_score(name, score, attempt):
 
 
 def get_leaderboard():
-    """Fetch and display the top scores with ranking numbers (index hidden)."""
-    st.subheader("🏆 Leaderboard (Top 10)")
+    """Fetch and display the top scores per student (highest score only) with ranking numbers (index hidden)."""
+    st.subheader("🏆 Leaderboard (Top 10 - Highest per Student)")
     sheet = connect_to_gsheets()
     if sheet is None:
         st.error("⚠️ Cannot fetch leaderboard. Google Sheets connection failed.")
@@ -133,11 +133,25 @@ def get_leaderboard():
         df = pd.DataFrame(data[1:], columns=data[0])
         df["Score"] = pd.to_numeric(df["Score"], errors="coerce")
         df.dropna(subset=["Score"], inplace=True)
-        df_sorted = (
-            df.sort_values(by="Score", ascending=False).head(10).reset_index(drop=True)
+
+        # Sort by score in descending order so that highest scores come first
+        df_sorted = df.sort_values(by="Score", ascending=False)
+
+        # Group by student name and take the first row (the highest score for each student)
+        df_grouped = df_sorted.groupby("Name", as_index=False).first()
+
+        # Sort the grouped DataFrame in descending order of score and take the top 10
+        df_grouped = (
+            df_grouped.sort_values(by="Score", ascending=False)
+            .head(10)
+            .reset_index(drop=True)
         )
-        df_sorted.insert(0, "Rank", range(1, len(df_sorted) + 1))
-        html_table = df_sorted.to_html(index=False)
+
+        # Insert a custom ranking column
+        df_grouped.insert(0, "Rank", range(1, len(df_grouped) + 1))
+
+        # Convert the DataFrame to HTML without the default index and display it
+        html_table = df_grouped.to_html(index=False)
         st.markdown(html_table, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"⚠️ Error retrieving leaderboard: {e}")
