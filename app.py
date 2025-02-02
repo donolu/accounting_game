@@ -4,6 +4,7 @@ import os
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
+from datetime import datetime
 
 
 def fix_base64_padding(b64_string):
@@ -84,6 +85,30 @@ def connect_to_gsheets():
         return None
 
 
+def save_score(name, score, attempt):
+    """Saves student scores to Google Sheets."""
+    try:
+        sheet = connect_to_gsheets()
+        if sheet is None:
+            st.error("⚠️ Google Sheets connection failed. Cannot save score.")
+            return
+
+        # ✅ Ensure the sheet has headers before inserting data
+        existing_data = sheet.get_all_values()
+        if not existing_data:  # If the sheet is empty, add headers first
+            sheet.append_row(["Name", "Score", "Attempt Number", "Timestamp"])
+
+        # ✅ Append the new score
+        sheet.append_row(
+            [name, score, attempt, datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
+        )
+        st.success(f"✅ Score for {name} saved successfully!")
+
+    except Exception as e:
+        st.error(f"⚠️ Error saving score: {e}")
+
+
 sheet = connect_to_gsheets()
 if sheet:
+    save_score("Test User", 100, 1)
     st.write("✅ Google Sheets is ready to use!")
